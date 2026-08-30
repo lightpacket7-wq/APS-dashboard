@@ -865,7 +865,11 @@ def df_to_excel_bytes(df: pd.DataFrame, sheet_name="Sheet1", logo_path: str | No
         cell_format = workbook.add_format({"align": "center", "valign": "vcenter", "border": 1})
         for r in range(len(df)):
             for c in range(len(df.columns)):
-                worksheet.write(start_row + 1 + r, c, df.iloc[r, c], cell_format)
+                value = df.iloc[r, c]
+                if pd.isna(value):
+                    worksheet.write_blank(start_row + 1 + r, c, None, cell_format)
+                else:
+                    worksheet.write(start_row + 1 + r, c, value, cell_format)
 
         for i, col in enumerate(df.columns):
             max_len = max(df[col].astype(str).map(len).max(), len(col)) + 2
