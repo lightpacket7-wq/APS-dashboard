@@ -872,7 +872,7 @@ def df_to_excel_bytes(df: pd.DataFrame, sheet_name="Sheet1", logo_path: str | No
                     worksheet.write(start_row + 1 + r, c, value, cell_format)
 
         for i, col in enumerate(df.columns):
-            max_len = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            max_len = max(df[col].fillna("").astype(str).map(len).max(), len(col)) + 2
             worksheet.set_column(i, i, max_len)
 
         worksheet.freeze_panes(start_row + 1, 0)
