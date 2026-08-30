@@ -25,6 +25,7 @@ DISPLAY_COLUMNS_MAP = {
     "Product Name": "Product Name",
     "Protection Type": "Protection Type",
     "SoftWare Version": "Software Version",
+    "Boot Version": "Boot Version",
     "System Mode": "System Mode",
     "Uplink Service Type": "Uplink Service Type",
     "Client Service Type": "Client Service Type",
@@ -41,6 +42,7 @@ CONFIG_COLS = [
     "Protection Type",
     "Protection Action",
     "SoftWare Version",
+    "Boot Version",
     "System Mode",
     "Uplink Service Type",
     "Client Service Type",
@@ -59,6 +61,7 @@ FULL_TABLE_ORDER_ORIGINAL = [
     "Protection Type",
     "Protection Action",
     "SoftWare Version",
+    "Boot Version",
     "System Mode",
     "Uplink Service Type",
     "Client Service Type",
@@ -73,6 +76,7 @@ FILTER_KEYS = [
     ("prot", "sel_protection"),
     ("pact", "sel_protection_action"),
     ("sw", "sel_sw"),
+    ("boot", "sel_boot_version"),
     ("mode", "sel_mode"),
     ("uplink", "sel_uplink"),
     ("client", "sel_client"),
@@ -283,6 +287,12 @@ def sidebar_filters(df: pd.DataFrame):
         if selected_sw:
             filtered_options_df = filtered_options_df[filtered_options_df["SoftWare Version"].isin(selected_sw)]
 
+        # 4b) Boot Version
+        boot_options = sorted([x for x in filtered_options_df["Boot Version"].dropna().unique() if str(x).strip() != ""])
+        selected_boot_version = multiselect_autoclose("Boot Version", boot_options, "boot", "sel_boot_version")
+        if selected_boot_version:
+            filtered_options_df = filtered_options_df[filtered_options_df["Boot Version"].isin(selected_boot_version)]
+
         # 5) System Mode
         mode_options = sorted([x for x in filtered_options_df["System Mode"].dropna().unique() if str(x).strip() != ""])
         selected_mode = multiselect_autoclose("System Mode", mode_options, "mode", "sel_mode")
@@ -396,6 +406,7 @@ def sidebar_filters(df: pd.DataFrame):
     qp_set_list("prot",   selected_protection)
     qp_set_list("pact", selected_protection_action)
     qp_set_list("sw",     selected_sw)
+    qp_set_list("boot",   selected_boot_version)
     qp_set_list("mode",   selected_mode)
     qp_set_list("uplink", selected_uplink)
     qp_set_list("client", selected_client)
@@ -416,6 +427,7 @@ def sidebar_filters(df: pd.DataFrame):
         "selected_protection": selected_protection,
         "selected_protection_action": selected_protection_action,
         "selected_sw": selected_sw,
+        "selected_boot_version": selected_boot_version,
         "selected_mode": selected_mode,
         "selected_uplink": selected_uplink,
         "selected_client": selected_client,
@@ -445,6 +457,7 @@ def apply_base_filters(df: pd.DataFrame, f: dict) -> pd.DataFrame:
     apply_in("Product Name", f["selected_product"])
     apply_in("Protection Type", f["selected_protection"])
     apply_in("SoftWare Version", f["selected_sw"])
+    apply_in("Boot Version", f["selected_boot_version"])
     apply_in("System Mode", f["selected_mode"])
     apply_in("Uplink Service Type", f["selected_uplink"])
     apply_in("Client Service Type", f["selected_client"])

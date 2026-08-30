@@ -182,6 +182,15 @@ def K(name: str) -> str:
 def load_data() -> pd.DataFrame:
     df = pd.read_sql(f'SELECT rowid as _rowid_, * FROM "{MAIN_TABLE}"', engine)
 
+    # Normalize Protection Action values
+    if "Protection Action" in df.columns:
+        df["Protection Action"] = df["Protection Action"].astype(str).str.strip()
+
+        df.loc[
+            df["Protection Action"].str.lower() == "fiber cut",
+            "Protection Action"
+        ] = "Fiber Cut"
+
     # Normalize timestamp column
     if "Time Stamp" in df.columns:
         parsed = pd.to_datetime(df["Time Stamp"], errors="coerce", dayfirst=True)
@@ -241,7 +250,7 @@ def sidebar_filters(df: pd.DataFrame):
             nonlocal filtered_options_df
             selected = []
             if col in filtered_options_df.columns:
-                options = sorted(filtered_options_df[col].dropna().unique())
+                options = sorted([x for x in filtered_options_df[col].dropna().unique() if str(x).strip() != ""])
                 default = [x for x in qp_get_list(qp_key) if x in options]
                 selected = st.multiselect(label, options, default=default, key=K(key_name))
                 if selected:
@@ -581,26 +590,27 @@ def multiselect_autoclose(label: str, options: list, qp_key: str, state_key: str
     Multiselect that closes after any change by remounting (key changes).
     Selected values are stored in st.session_state[state_key].
     """
+
     tok_key = f"__tok__{state_key}__rt{reset_token}"
 
     if tok_key not in st.session_state:
         st.session_state[tok_key] = 0
+
+    # Initialize from query params only once
     if state_key not in st.session_state:
-        st.session_state[state_key] = []
+        st.session_state[state_key] = [x for x in qp_get_list(qp_key) if x in options]
+
+    # Keep only values that still exist in current options
+    current = [x for x in st.session_state[state_key] if x in options]
+    st.session_state[state_key] = current
 
     widget_key = f"{state_key}__w__rt{reset_token}__{st.session_state[tok_key]}"
 
-    # current selection (prefer stable state; on first load try query params)
-    current = st.session_state[state_key]
-    if not current:
-        qp_default = [x for x in qp_get_list(qp_key) if x in options]
-        if qp_default:
-            current = qp_default
-            st.session_state[state_key] = current
-
     def _on_change():
-        st.session_state[state_key] = st.session_state.get(widget_key, [])
-        st.session_state[tok_key] += 1  # force remount => closes dropdown
+        new_values = st.session_state.get(widget_key, [])
+        st.session_state[state_key] = new_values
+        qp_set_list(qp_key, new_values)   # update URL immediately
+        st.session_state[tok_key] += 1    # force remount => closes dropdown
 
     return st.multiselect(
         label,
@@ -628,13 +638,13 @@ def style_summary_table(df: pd.DataFrame):
         styles = [""] * len(row.index)
         idx = {c: i for i, c in enumerate(row.index)}
 
-        # base zone fills
-        for c in [w2p_b, w2p_a]:
-            if c in idx:
-                styles[idx[c]] += f"background-color:{W2P_ZONE_BG}; font-weight:900;"
-        for c in [p2w_b, p2w_a]:
-            if c in idx:
-                styles[idx[c]] += f"background-color:{P2W_ZONE_BG}; font-weight:900;"
+        # # base zone fills
+        # for c in [w2p_b, w2p_a]:
+        #     if c in idx:
+        #         styles[idx[c]] += f"background-color:{W2P_ZONE_BG}; font-weight:900;"
+        # for c in [p2w_b, p2w_a]:
+        #     if c in idx:
+        #         styles[idx[c]] += f"background-color:{P2W_ZONE_BG}; font-weight:900;"
 
         # winner rules
         if w2p_b in idx and w2p_a in idx:
